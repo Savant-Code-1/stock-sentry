@@ -1,0 +1,166 @@
+supplier_id,supplier_name,product_id,unit_price,delivery_days,available_quantity,reliability_score,min_order_qty
+SUP06,Kisan Mandi Bulk Goods,P001,213.86,4,121,83.6,20
+SUP02,Mahalaxmi Agro & Staples Distributors,P001,226.24,4,52,90.8,15
+SUP11,Vardhman Value Mart Traders,P001,224.00,4,77,86.6,15
+SUP01,Shree Ganesh Kirana Wholesale,P002,129.82,3,67,95.7,10
+SUP06,Kisan Mandi Bulk Goods,P002,116.59,4,64,82.8,20
+SUP03,Metro Cash & Kirana Supply,P002,130.29,1,158,96.9,5
+SUP11,Vardhman Value Mart Traders,P003,464.14,3,92,87.9,15
+SUP06,Kisan Mandi Bulk Goods,P003,451.63,4,45,84.6,20
+SUP03,Metro Cash & Kirana Supply,P003,492.41,2,52,96.9,5
+SUP03,Metro Cash & Kirana Supply,P004,24.39,1,215,94.6,5
+SUP01,Shree Ganesh Kirana Wholesale,P004,23.41,2,85,95.9,10
+SUP02,Mahalaxmi Agro & Staples Distributors,P004,21.90,4,219,90.9,15
+SUP06,Kisan Mandi Bulk Goods,P005,132.78,4,80,82.3,20
+SUP02,Mahalaxmi Agro & Staples Distributors,P005,141.08,3,49,92.6,15
+SUP10,Om Sai Retail Wholesale Hub,P005,148.22,2,75,86.4,5
+SUP01,Shree Ganesh Kirana Wholesale,P006,43.17,3,77,92.6,10
+SUP10,Om Sai Retail Wholesale Hub,P006,44.10,2,124,87.9,5
+SUP11,Vardhman Value Mart Traders,P006,42.30,3,100,86.3,15
+SUP03,Metro Cash & Kirana Supply,P007,156.66,2,86,95.1,5
+SUP02,Mahalaxmi Agro & Staples Distributors,P007,148.93,4,111,90.0,15
+SUP11,Vardhman Value Mart Traders,P007,141.60,3,116,88.3,15
+SUP11,Vardhman Value Mart Traders,P008,91.04,3,84,88.2,15
+SUP02,Mahalaxmi Agro & Staples Distributors,P008,92.75,4,80,92.1,15
+SUP06,Kisan Mandi Bulk Goods,P008,88.19,4,88,82.3,20
+SUP10,Om Sai Retail Wholesale Hub,P009,68.92,2,54,89.1,5
+SUP06,Kisan Mandi Bulk Goods,P009,61.84,5,88,85.9,20
+SUP02,Mahalaxmi Agro & Staples Distributors,P009,62.31,3,85,90.1,15
+SUP02,Mahalaxmi Agro & Staples Distributors,P010,54.06,3,56,91.4,15
+SUP03,Metro Cash & Kirana Supply,P010,57.67,1,79,95.7,5
+SUP01,Shree Ganesh Kirana Wholesale,P010,54.57,2,54,92.3,10
+SUP10,Om Sai Retail Wholesale Hub,P011,117.84,2,73,89.8,5
+SUP11,Vardhman Value Mart Traders,P011,104.06,3,50,87.4,15
+SUP02,Mahalaxmi Agro & Staples Distributors,P011,110.77,3,61,90.8,15
+SUP02,Mahalaxmi Agro & Staples Distributors,P012,73.95,3,95,91.4,15
+SUP10,Om Sai Retail Wholesale Hub,P012,77.90,2,82,87.8,5
+SUP03,Metro Cash & Kirana Supply,P012,77.89,1,96,97.4,5
+SUP03,Metro Cash & Kirana Supply,P013,12.65,1,264,97.9,5
+SUP02,Mahalaxmi Agro & Staples Distributors,P013,12.13,3,186,91.5,15
+SUP11,Vardhman Value Mart Traders,P013,11.88,4,226,85.3,15
+SUP02,Mahalaxmi Agro & Staples Distributors,P014,100.36,3,61,91.5,15
+SUP03,Metro Cash & Kirana Supply,P014,112.02,1,46,97.4,5
+SUP11,Vardhman Value Mart Traders,P014,100.06,4,71,87.3,15
+SUP12,Apex Express Kirana Logistics,P015,67.39,2,129,96.7,4
+SUP04,Nandini & Amul Cold Chain Traders,P015,66.21,2,142,96.8,6
+SUP07,CityFresh Dairy & Chill Logistics,P015,66.44,1,180,94.2,5
+SUP04,Nandini & Amul Cold Chain Traders,P016,50.36,2,79,92.8,6
+SUP12,Apex Express Kirana Logistics,P016,54.05,1,114,96.6,4
+SUP07,CityFresh Dairy & Chill Logistics,P016,51.63,2,135,94.7,5
+SUP12,Apex Express Kirana Logistics,P017,35.35,2,110,96.4,4
+SUP10,Om Sai Retail Wholesale Hub,P017,35.01,3,75,87.9,5
+SUP07,CityFresh Dairy & Chill Logistics,P017,34.65,2,95,94.1,5
+SUP07,CityFresh Dairy & Chill Logistics,P018,80.54,1,62,93.3,5
+SUP04,Nandini & Amul Cold Chain Traders,P018,76.64,1,72,96.1,6
+SUP10,Om Sai Retail Wholesale Hub,P018,80.38,2,96,88.0,5
+SUP07,CityFresh Dairy & Chill Logistics,P019,302.70,2,76,90.6,5
+SUP12,Apex Express Kirana Logistics,P019,309.41,1,63,96.6,4
+SUP04,Nandini & Amul Cold Chain Traders,P019,293.27,2,38,92.9,6
+SUP12,Apex Express Kirana Logistics,P020,132.30,1,87,96.9,4
+SUP10,Om Sai Retail Wholesale Hub,P020,126.27,2,87,89.4,5
+SUP07,CityFresh Dairy & Chill Logistics,P020,130.05,1,47,90.7,5
+SUP04,Nandini & Amul Cold Chain Traders,P021,128.25,2,66,92.6,6
+SUP10,Om Sai Retail Wholesale Hub,P021,136.46,2,25,89.8,5
+SUP07,CityFresh Dairy & Chill Logistics,P021,129.42,2,76,92.3,5
+SUP04,Nandini & Amul Cold Chain Traders,P022,20.07,2,166,96.3,6
+SUP07,CityFresh Dairy & Chill Logistics,P022,20.86,2,102,92.2,5
+SUP12,Apex Express Kirana Logistics,P022,21.78,2,152,94.9,4
+SUP12,Apex Express Kirana Logistics,P023,264.14,1,54,96.0,4
+SUP04,Nandini & Amul Cold Chain Traders,P023,258.21,2,95,96.9,6
+SUP01,Shree Ganesh Kirana Wholesale,P023,252.98,3,79,95.0,10
+SUP09,Surya Beverages & Refreshments,P024,115.57,2,97,87.8,12
+SUP12,Apex Express Kirana Logistics,P024,127.23,1,52,98.0,4
+SUP03,Metro Cash & Kirana Supply,P024,122.27,1,51,94.4,5
+SUP03,Metro Cash & Kirana Supply,P025,220.95,1,53,94.5,5
+SUP09,Surya Beverages & Refreshments,P025,197.49,2,58,88.6,12
+SUP12,Apex Express Kirana Logistics,P025,218.03,1,35,95.3,4
+SUP09,Surya Beverages & Refreshments,P026,210.14,2,50,89.5,12
+SUP10,Om Sai Retail Wholesale Hub,P026,233.44,2,83,87.2,5
+SUP12,Apex Express Kirana Logistics,P026,230.73,1,77,94.9,4
+SUP10,Om Sai Retail Wholesale Hub,P027,115.34,2,57,86.7,5
+SUP03,Metro Cash & Kirana Supply,P027,110.94,1,48,94.8,5
+SUP12,Apex Express Kirana Logistics,P027,113.18,1,101,98.0,4
+SUP04,Nandini & Amul Cold Chain Traders,P028,36.62,1,122,94.6,6
+SUP12,Apex Express Kirana Logistics,P028,37.69,1,173,96.0,4
+SUP03,Metro Cash & Kirana Supply,P028,38.25,1,184,95.5,5
+SUP12,Apex Express Kirana Logistics,P029,14.94,2,277,95.4,4
+SUP10,Om Sai Retail Wholesale Hub,P029,14.82,2,181,86.8,5
+SUP03,Metro Cash & Kirana Supply,P029,15.07,1,247,97.5,5
+SUP04,Nandini & Amul Cold Chain Traders,P030,9.47,1,183,93.0,6
+SUP09,Surya Beverages & Refreshments,P030,9.21,3,229,87.8,12
+SUP12,Apex Express Kirana Logistics,P030,10.11,1,208,98.7,4
+SUP03,Metro Cash & Kirana Supply,P031,159.41,1,80,97.8,5
+SUP09,Surya Beverages & Refreshments,P031,149.66,3,59,87.6,12
+SUP04,Nandini & Amul Cold Chain Traders,P031,146.14,1,70,93.2,6
+SUP10,Om Sai Retail Wholesale Hub,P032,55.70,3,116,88.1,5
+SUP11,Vardhman Value Mart Traders,P032,51.14,4,108,86.4,15
+SUP03,Metro Cash & Kirana Supply,P032,56.48,1,144,98.0,5
+SUP11,Vardhman Value Mart Traders,P033,102.01,4,133,85.6,15
+SUP03,Metro Cash & Kirana Supply,P033,109.77,1,120,98.4,5
+SUP10,Om Sai Retail Wholesale Hub,P033,111.08,2,144,87.0,5
+SUP10,Om Sai Retail Wholesale Hub,P034,179.11,2,62,88.9,5
+SUP03,Metro Cash & Kirana Supply,P034,183.20,2,66,95.0,5
+SUP11,Vardhman Value Mart Traders,P034,166.68,3,79,87.1,15
+SUP11,Vardhman Value Mart Traders,P035,105.56,3,49,85.3,15
+SUP05,Bharat FMCG Direct,P035,107.25,2,50,93.2,10
+SUP10,Om Sai Retail Wholesale Hub,P035,113.59,2,75,87.0,5
+SUP05,Bharat FMCG Direct,P036,78.98,2,97,90.9,10
+SUP10,Om Sai Retail Wholesale Hub,P036,83.70,3,54,85.6,5
+SUP11,Vardhman Value Mart Traders,P036,76.62,3,61,88.2,15
+SUP05,Bharat FMCG Direct,P037,29.20,3,174,93.8,10
+SUP11,Vardhman Value Mart Traders,P037,28.74,3,112,84.8,15
+SUP08,Hindustan Home & Hygiene Depot,P037,31.18,2,72,90.8,8
+SUP05,Bharat FMCG Direct,P038,155.53,2,69,90.5,10
+SUP10,Om Sai Retail Wholesale Hub,P038,165.11,3,75,89.1,5
+SUP08,Hindustan Home & Hygiene Depot,P038,162.05,3,35,89.1,8
+SUP05,Bharat FMCG Direct,P039,90.14,2,61,93.8,10
+SUP10,Om Sai Retail Wholesale Hub,P039,97.06,2,67,87.3,5
+SUP03,Metro Cash & Kirana Supply,P039,94.77,1,82,96.1,5
+SUP03,Metro Cash & Kirana Supply,P040,21.27,1,140,95.1,5
+SUP05,Bharat FMCG Direct,P040,19.25,2,287,90.1,10
+SUP01,Shree Ganesh Kirana Wholesale,P040,20.03,3,145,94.1,10
+SUP09,Surya Beverages & Refreshments,P041,15.58,3,124,89.5,12
+SUP03,Metro Cash & Kirana Supply,P041,16.39,1,127,95.4,5
+SUP11,Vardhman Value Mart Traders,P041,15.06,3,171,88.3,15
+SUP09,Surya Beverages & Refreshments,P042,47.33,3,109,89.9,12
+SUP03,Metro Cash & Kirana Supply,P042,48.89,1,98,97.2,5
+SUP10,Om Sai Retail Wholesale Hub,P042,49.49,2,55,88.0,5
+SUP03,Metro Cash & Kirana Supply,P043,37.33,2,91,94.8,5
+SUP05,Bharat FMCG Direct,P043,35.59,3,153,92.9,10
+SUP01,Shree Ganesh Kirana Wholesale,P043,36.57,2,128,92.0,10
+SUP10,Om Sai Retail Wholesale Hub,P044,17.07,2,214,86.5,5
+SUP05,Bharat FMCG Direct,P044,15.55,3,138,90.8,10
+SUP01,Shree Ganesh Kirana Wholesale,P044,16.51,2,142,93.1,10
+SUP01,Shree Ganesh Kirana Wholesale,P045,29.11,2,74,95.1,10
+SUP09,Surya Beverages & Refreshments,P045,28.15,2,138,89.7,12
+SUP11,Vardhman Value Mart Traders,P045,27.26,4,65,87.5,15
+SUP03,Metro Cash & Kirana Supply,P046,33.90,2,118,94.8,5
+SUP01,Shree Ganesh Kirana Wholesale,P046,33.59,2,87,94.1,10
+SUP05,Bharat FMCG Direct,P046,32.84,3,136,93.2,10
+SUP03,Metro Cash & Kirana Supply,P047,54.07,2,52,97.2,5
+SUP09,Surya Beverages & Refreshments,P047,47.95,2,77,90.7,12
+SUP01,Shree Ganesh Kirana Wholesale,P047,51.14,3,86,93.7,10
+SUP10,Om Sai Retail Wholesale Hub,P048,125.19,2,133,89.1,5
+SUP05,Bharat FMCG Direct,P048,119.91,2,117,92.9,10
+SUP08,Hindustan Home & Hygiene Depot,P048,123.03,2,110,91.8,8
+SUP05,Bharat FMCG Direct,P049,95.00,3,47,92.8,10
+SUP10,Om Sai Retail Wholesale Hub,P049,99.09,3,81,89.3,5
+SUP02,Mahalaxmi Agro & Staples Distributors,P049,93.54,3,63,93.4,15
+SUP03,Metro Cash & Kirana Supply,P050,91.12,1,79,96.5,5
+SUP08,Hindustan Home & Hygiene Depot,P050,87.24,2,79,91.5,8
+SUP05,Bharat FMCG Direct,P050,88.42,2,48,92.3,10
+SUP08,Hindustan Home & Hygiene Depot,P051,100.42,2,92,89.6,8
+SUP02,Mahalaxmi Agro & Staples Distributors,P051,96.77,3,61,93.5,15
+SUP10,Om Sai Retail Wholesale Hub,P051,104.34,3,74,86.2,5
+SUP05,Bharat FMCG Direct,P052,86.27,2,67,93.6,10
+SUP02,Mahalaxmi Agro & Staples Distributors,P052,84.86,3,65,90.4,15
+SUP12,Apex Express Kirana Logistics,P052,96.43,1,52,97.4,4
+SUP12,Apex Express Kirana Logistics,P053,21.00,1,108,97.2,4
+SUP02,Mahalaxmi Agro & Staples Distributors,P053,19.60,3,77,89.0,15
+SUP10,Om Sai Retail Wholesale Hub,P053,20.99,2,183,88.6,5
+SUP08,Hindustan Home & Hygiene Depot,P054,70.07,3,55,88.0,8
+SUP02,Mahalaxmi Agro & Staples Distributors,P054,67.16,3,59,90.7,15
+SUP03,Metro Cash & Kirana Supply,P054,74.37,1,124,98.5,5
+SUP03,Metro Cash & Kirana Supply,P055,51.65,1,92,95.6,5
+SUP02,Mahalaxmi Agro & Staples Distributors,P055,46.78,4,55,93.1,15
+SUP10,Om Sai Retail Wholesale Hub,P055,52.18,2,63,85.9,5

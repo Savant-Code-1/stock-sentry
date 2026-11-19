@@ -1,0 +1,129 @@
+movement_id,date,product_id,movement_type,quantity,remarks
+M0001,2026-10-19,P014,RETURN,3,Customer return (unopened pack)
+M0002,2026-10-19,P039,RESTOCK,43,Routine supplier delivery received
+M0003,2026-10-19,P005,SALE,-6,Daily counter sales batch
+M0004,2026-10-19,P053,SALE,-4,Daily counter sales batch
+M0005,2026-10-19,P006,RESTOCK,34,Routine supplier delivery received
+M0006,2026-10-20,P007,ADJUSTMENT,1,Routine cycle count reconciliation
+M0007,2026-10-20,P049,RESTOCK,16,Routine supplier delivery received
+M0008,2026-10-20,P052,RESTOCK,40,Routine supplier delivery received
+M0009,2026-10-20,P044,SALE,-10,Daily counter sales batch
+M0010,2026-10-21,P016,SALE,-7,Daily counter sales batch
+M0011,2026-10-22,P011,RETURN,4,Customer return (unopened pack)
+M0012,2026-10-22,P009,RESTOCK,34,Routine supplier delivery received
+M0013,2026-10-22,P028,RESTOCK,41,Routine supplier delivery received
+M0014,2026-10-22,P046,ADJUSTMENT,-2,Routine cycle count reconciliation
+M0015,2026-10-23,P006,RETURN,1,Customer return (unopened pack)
+M0016,2026-10-23,P018,RESTOCK,33,Routine supplier delivery received
+M0017,2026-10-23,P038,DAMAGE,-3,Minor packaging damage on shelf
+M0018,2026-10-23,P006,ADJUSTMENT,1,Routine cycle count reconciliation
+M0019,2026-10-23,P011,ADJUSTMENT,-1,Routine cycle count reconciliation
+M0020,2026-10-23,P035,RESTOCK,24,Routine supplier delivery received
+M0021,2026-10-24,P033,SALE,-4,Daily counter sales batch
+M0022,2026-10-24,P047,RESTOCK,38,Routine supplier delivery received
+M0023,2026-10-24,P055,RESTOCK,41,Routine supplier delivery received
+M0024,2026-10-24,P029,RESTOCK,29,Routine supplier delivery received
+M0025,2026-10-25,P023,RESTOCK,35,Routine supplier delivery received
+M0026,2026-10-25,P035,RESTOCK,30,Routine supplier delivery received
+M0027,2026-10-25,P042,RETURN,1,Customer return (unopened pack)
+M0028,2026-10-25,P053,SALE,-8,Daily counter sales batch
+M0029,2026-10-26,P026,RETURN,2,Customer return (unopened pack)
+M0030,2026-10-26,P042,RESTOCK,41,Routine supplier delivery received
+M0031,2026-10-27,P010,RESTOCK,43,Routine supplier delivery received
+M0032,2026-10-27,P013,SALE,-10,Daily counter sales batch
+M0033,2026-10-27,P028,SALE,-3,Daily counter sales batch
+M0034,2026-10-27,P014,ADJUSTMENT,-2,Routine cycle count reconciliation
+M0035,2026-10-27,P024,ADJUSTMENT,-2,Routine cycle count reconciliation
+M0036,2026-10-27,P050,RESTOCK,33,Routine supplier delivery received
+M0037,2026-10-28,P032,RESTOCK,36,Routine supplier delivery received
+M0038,2026-10-28,P007,SALE,-6,Daily counter sales batch
+M0039,2026-10-29,P002,SALE,-7,Daily counter sales batch
+M0040,2026-10-29,P023,RESTOCK,19,Routine supplier delivery received
+M0041,2026-10-29,P025,SALE,-8,Daily counter sales batch
+M0042,2026-10-29,P032,RESTOCK,18,Routine supplier delivery received
+M0043,2026-10-30,P017,SALE,-9,Daily counter sales batch
+M0044,2026-10-30,P024,SALE,-4,Daily counter sales batch
+M0045,2026-10-30,P027,RESTOCK,33,Routine supplier delivery received
+M0046,2026-10-31,P021,RESTOCK,37,Routine supplier delivery received
+M0047,2026-10-31,P022,SALE,-8,Daily counter sales batch
+M0048,2026-10-31,P026,DAMAGE,-1,Minor packaging damage on shelf
+M0049,2026-10-31,P048,RESTOCK,42,Routine supplier delivery received
+M0050,2026-10-31,P002,SALE,-2,Daily counter sales batch
+M0051,2026-11-01,P043,SALE,-7,Daily counter sales batch
+M0052,2026-11-01,P050,RESTOCK,44,Routine supplier delivery received
+M0053,2026-11-01,P003,RESTOCK,36,Routine supplier delivery received
+M0054,2026-11-01,P008,RESTOCK,32,Routine supplier delivery received
+M0055,2026-11-01,P009,RESTOCK,23,Routine supplier delivery received
+M0056,2026-11-02,P022,RETURN,1,Customer return (unopened pack)
+M0057,2026-11-02,P036,RESTOCK,18,Routine supplier delivery received
+M0058,2026-11-03,P003,RESTOCK,19,Routine supplier delivery received
+M0059,2026-11-03,P031,RESTOCK,34,Routine supplier delivery received
+M0060,2026-11-03,P018,SALE,-2,Daily counter sales batch
+M0061,2026-11-03,P021,SALE,-7,Daily counter sales batch
+M0062,2026-11-03,P034,RESTOCK,26,Routine supplier delivery received
+M0063,2026-11-03,P002,ADJUSTMENT,2,Routine cycle count reconciliation
+M0064,2026-11-03,P004,RESTOCK,21,Routine supplier delivery received
+M0065,2026-11-04,P012,RESTOCK,30,Routine supplier delivery received
+M0066,2026-11-04,P016,ADJUSTMENT,1,Routine cycle count reconciliation
+M0067,2026-11-04,P049,RESTOCK,35,Routine supplier delivery received
+M0068,2026-11-04,P010,RESTOCK,21,Routine supplier delivery received
+M0069,2026-11-05,P036,SALE,-6,Daily counter sales batch
+M0070,2026-11-05,P045,RESTOCK,39,Routine supplier delivery received
+M0071,2026-11-05,P008,RESTOCK,33,Routine supplier delivery received
+M0072,2026-11-05,P041,RESTOCK,16,Routine supplier delivery received
+M0073,2026-11-06,P015,RESTOCK,42,Routine supplier delivery received
+M0074,2026-11-06,P015,RESTOCK,36,Routine supplier delivery received
+M0075,2026-11-07,P029,SALE,-5,Daily counter sales batch
+M0076,2026-11-07,P027,RESTOCK,25,Routine supplier delivery received
+M0077,2026-11-07,P038,ADJUSTMENT,-2,Routine cycle count reconciliation
+M0078,2026-11-08,P025,RESTOCK,17,Routine supplier delivery received
+M0079,2026-11-08,P041,SALE,-6,Daily counter sales batch
+M0080,2026-11-08,P030,RESTOCK,45,Routine supplier delivery received
+M0081,2026-11-08,P051,DAMAGE,-1,Minor packaging damage on shelf
+M0082,2026-11-09,P004,RESTOCK,17,Routine supplier delivery received
+M0083,2026-11-09,P005,SALE,-6,Daily counter sales batch
+M0084,2026-11-09,P054,RESTOCK,28,Routine supplier delivery received
+M0085,2026-11-09,P010,SALE,-9,Daily counter sales batch
+M0086,2026-11-09,P045,RESTOCK,18,Routine supplier delivery received
+M0087,2026-11-09,P048,RESTOCK,41,Routine supplier delivery received
+M0088,2026-11-10,P008,SALE,-10,Daily counter sales batch
+M0089,2026-11-10,P009,SALE,-6,Daily counter sales batch
+M0090,2026-11-10,P031,RESTOCK,39,Routine supplier delivery received
+M0091,2026-11-10,P039,ADJUSTMENT,1,Routine cycle count reconciliation
+M0092,2026-11-11,P037,RESTOCK,38,Routine supplier delivery received
+M0093,2026-11-11,P003,RESTOCK,31,Routine supplier delivery received
+M0094,2026-11-11,P033,SALE,-7,Daily counter sales batch
+M0095,2026-11-11,P043,RESTOCK,27,Routine supplier delivery received
+M0096,2026-11-11,P005,RESTOCK,29,Routine supplier delivery received
+M0097,2026-11-12,P051,RESTOCK,45,Routine supplier delivery received
+M0098,2026-11-12,P012,RESTOCK,28,Routine supplier delivery received
+M0099,2026-11-12,P019,SALE,-3,Daily counter sales batch
+M0100,2026-11-12,P040,RESTOCK,22,Routine supplier delivery received
+M0101,2026-11-13,P001,RESTOCK,18,Routine supplier delivery received
+M0102,2026-11-13,P034,RESTOCK,19,Routine supplier delivery received
+M0103,2026-11-13,P046,DAMAGE,-3,Minor packaging damage on shelf
+M0104,2026-11-13,P017,RESTOCK,22,Routine supplier delivery received
+M0105,2026-11-13,P055,RESTOCK,29,Routine supplier delivery received
+M0106,2026-11-14,P019,RESTOCK,21,Routine supplier delivery received
+M0107,2026-11-14,P001,SALE,-3,Daily counter sales batch
+M0108,2026-11-14,P007,SALE,-2,Daily counter sales batch
+M0109,2026-11-14,P037,RESTOCK,36,Routine supplier delivery received
+M0110,2026-11-14,P054,DAMAGE,-2,Minor packaging damage on shelf
+M0111,2026-11-14,P005,RESTOCK,55,Bulk delivery logged — verify physical stock vs recorded stock
+M0112,2026-11-15,P020,DAMAGE,-2,Minor packaging damage on shelf
+M0113,2026-11-15,P030,RESTOCK,44,Routine supplier delivery received
+M0114,2026-11-15,P044,SALE,-4,Daily counter sales batch
+M0115,2026-11-15,P004,RETURN,1,Customer return (unopened pack)
+M0116,2026-11-15,P020,DAMAGE,-3,Minor packaging damage on shelf
+M0117,2026-11-15,P001,RESTOCK,33,Routine supplier delivery received
+M0118,2026-11-15,P033,ADJUSTMENT,-7,Shelf reconciliation downward adjustment #1
+M0119,2026-11-15,P018,RESTOCK,40,Cold-storage delivery logged — current stock significantly lower than net ledger
+M0120,2026-11-16,P040,RESTOCK,28,Routine supplier delivery received
+M0121,2026-11-16,P013,RESTOCK,26,Routine supplier delivery received
+M0122,2026-11-16,P047,RESTOCK,39,Routine supplier delivery received
+M0123,2026-11-16,P052,RETURN,2,Customer return (unopened pack)
+M0124,2026-11-16,P001,DAMAGE,-22,Sudden reduction logged after backroom storage inspection
+M0125,2026-11-16,P033,ADJUSTMENT,-9,Shelf reconciliation downward adjustment #2
+M0126,2026-11-17,P023,ADJUSTMENT,-26,Manual shelf count discrepancy during evening check
+M0127,2026-11-17,P033,ADJUSTMENT,-8,Shelf reconciliation downward adjustment #3
+M0128,2026-11-17,P048,ADJUSTMENT,-19,Unexplained reduction noted between register and shelf count

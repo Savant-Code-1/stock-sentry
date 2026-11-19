@@ -1,0 +1,56 @@
+product_id,product_name,category,current_stock,unit,selling_price,cost_price,reorder_point,target_stock
+P001,Aashirvaad Shudh Chakki Atta 5kg,Grocery,14,pack,265.0,232.0,18,50
+P002,Fortune Sunlite Refined Sunflower Oil 1L,Grocery,11,pouch,148.0,130.0,20,60
+P003,India Gate Basmati Rice Classic 5kg,Grocery,28,bag,540.0,475.0,12,35
+P004,Tata Salt Vacuum Evaporated 1kg,Grocery,62,pack,28.0,23.0,25,80
+P005,Arhar Toor Dal 1kg,Grocery,9,pack,165.0,144.0,15,45
+P006,Madhur Pure Sugar 1kg,Grocery,44,pack,52.0,44.0,20,65
+P007,Dhara Kachi Ghani Mustard Oil 1L,Grocery,0,bottle,172.0,152.0,15,45
+P008,Rajdhani Besan 1kg,Grocery,31,pack,112.0,96.0,12,40
+P009,Tata Sampann Thick Poha 1kg,Grocery,26,pack,78.0,65.0,12,36
+P010,Everest Turmeric Powder 200g,Grocery,38,pack,68.0,55.0,15,45
+P011,Everest Kashmiri Lal Mirch 200g,Grocery,22,pack,135.0,114.0,12,35
+P012,MDH Garam Masala 100g,Grocery,33,box,92.0,76.0,12,36
+P013,Maggi 2-Minute Masala Noodles 70g,Grocery,18,pack,15.0,12.5,40,120
+P014,Kissan Fresh Tomato Ketchup 500g,Grocery,24,bottle,125.0,106.0,10,30
+P015,Amul Taaza Toned Milk 1L,Dairy,12,tetra,74.0,66.0,22,60
+P016,Amul Pasteurised Butter 100g,Dairy,8,pack,60.0,53.0,18,50
+P017,Mother Dairy Classic Curd 400g,Dairy,19,cup,42.0,35.0,15,40
+P018,Amul Malai Paneer 200g,Dairy,6,pack,92.0,80.0,14,38
+P019,Amul Pure Desi Ghee 500ml,Dairy,17,jar,335.0,298.0,10,28
+P020,Amul Processed Cheese Slices 200g,Dairy,21,pack,145.0,126.0,10,30
+P021,Nestle Milkmaid Condensed Milk 380g,Dairy,15,tin,146.0,128.0,8,24
+P022,Amul Kool Elaichi Flavoured Milk 180ml,Dairy,34,bottle,25.0,20.5,20,60
+P023,Tata Tea Gold 500g,Beverages,10,pack,295.0,260.0,15,45
+P024,Brooke Bond Red Label Tea 250g,Beverages,29,pack,140.0,121.0,14,42
+P025,Bru Instant Coffee 100g,Beverages,23,jar,245.0,212.0,10,30
+P026,Cadbury Bournvita Health Drink 500g,Beverages,18,jar,255.0,224.0,10,28
+P027,Real Fruit Power Mango Juice 1L,Beverages,0,tetra,130.0,110.0,14,40
+P028,Coca-Cola Soft Drink 750ml,Beverages,48,bottle,45.0,37.0,24,72
+P029,Bisleri Packaged Drinking Water 1L,Beverages,75,bottle,20.0,14.5,35,100
+P030,Parle Agro Frooti Mango 200ml,Beverages,42,tetra,12.0,9.5,30,90
+P031,Nescafe Classic Coffee 50g,Beverages,20,jar,175.0,152.0,10,28
+P032,Dove Cream Beauty Bathing Bar 100g,Personal Care,36,bar,65.0,54.0,18,55
+P033,Colgate Strong Teeth Toothpaste 200g,Personal Care,12,tube,125.0,106.0,16,48
+P034,Clinic Plus Strong & Long Shampoo 340ml,Personal Care,25,bottle,210.0,178.0,10,30
+P035,Parachute Pure Coconut Oil 250ml,Personal Care,28,bottle,128.0,108.0,12,36
+P036,Dettol Original Liquid Handwash 200ml,Personal Care,9,pump,99.0,82.0,14,40
+P037,Lifebuoy Total 10 Soap 125g,Personal Care,50,bar,38.0,31.0,22,65
+P038,Nivea Soft Light Moisturiser 100ml,Personal Care,19,tub,195.0,162.0,8,24
+P039,Ponds Dreamflower Talcum Powder 100g,Personal Care,22,bottle,115.0,95.0,10,28
+P040,Parle-G Original Glucose Biscuits 250g,Snacks,16,pack,25.0,20.5,35,110
+P041,Lays Classic Salted Potato Chips 50g,Snacks,45,pack,20.0,16.0,25,80
+P042,Haldiram Aloo Bhujia 200g,Snacks,27,pack,58.0,48.0,15,45
+P043,Britannia Good Day Butter Cookies 200g,Snacks,32,pack,45.0,37.0,18,55
+P044,Kurkure Masala Munch 85g,Snacks,39,pack,20.0,16.2,24,75
+P045,Parle Hide & Seek Fab Biscuits 100g,Snacks,11,pack,35.0,29.0,16,48
+P046,Britannia Marie Gold Biscuits 250g,Snacks,29,pack,40.0,33.0,18,50
+P047,Haldiram Moong Dal Namkeen 200g,Snacks,24,pack,62.0,51.0,12,36
+P048,Surf Excel Easy Wash Detergent 1kg,Household Essentials,13,pack,142.0,122.0,18,52
+P049,Vim Dishwash Gel Lemon 500ml,Household Essentials,26,bottle,115.0,96.0,12,36
+P050,Harpic Power Plus Toilet Cleaner 500ml,Household Essentials,21,bottle,108.0,90.0,12,36
+P051,Lizol Disinfectant Floor Cleaner 500ml,Household Essentials,0,bottle,118.0,98.0,12,36
+P052,Colin Glass & Surface Cleaner 500ml,Household Essentials,17,spray,109.0,91.0,8,25
+P053,Rin Detergent Bar 250g,Household Essentials,55,bar,25.0,20.5,25,75
+P054,Good Knight Gold Flash Liquid Refill,Household Essentials,10,pack,85.0,71.0,15,42
+P055,Odonil Room Air Freshener Block 50g,Household Essentials,30,pack,62.0,50.0,12,36

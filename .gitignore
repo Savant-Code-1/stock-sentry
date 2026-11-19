@@ -1,0 +1,33 @@
+# Environment & secrets
+.env
+.streamlit/secrets.toml
+
+# Local SQLite databases (auto-created on first run)
+*.db
+*.sqlite
+*.sqlite3
+database/*.db
+
+# Python virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Python caches & build artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# IDE & OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.log
+*.tmp
+.pip_tmp/
