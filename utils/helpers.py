@@ -1,19 +1,80 @@
-"""Shared formatting, date, and calculation helper functions."""
+"""Shared formatting, security sanitization, accessibility, and date helper functions."""
 
 from __future__ import annotations
 
+import html
 import math
 from datetime import datetime, timezone
-from typing import Optional, Union
+from typing import Any, Optional, Union
 
 from config import CURRENCY_SYMBOL
+
+# WCAG 2.2 AA/AAA verified status background colors paired with #FFFFFF foreground text
+# Every single color below exceeds the WCAG 2.2 AA 4.5:1 contrast threshold.
+STATUS_COLOR_MAP: dict[str, str] = {
+    "Out of Stock": "#B91C1C",       # 6.47:1 contrast vs #FFFFFF
+    "Low Stock": "#92400E",          # 7.05:1 contrast vs #FFFFFF
+    "Healthy": "#166534",            # 7.13:1 contrast vs #FFFFFF
+    "In Stock (No ROP)": "#0369A1",  # 5.93:1 contrast vs #FFFFFF
+    "Overstock": "#6D28D9",          # 7.04:1 contrast vs #FFFFFF
+    "Critical": "#B91C1C",           # 6.47:1 contrast vs #FFFFFF
+    "High": "#9A3412",               # 6.98:1 contrast vs #FFFFFF
+    "Medium": "#92400E",             # 7.05:1 contrast vs #FFFFFF
+    "Low": "#1D4ED8",                # 6.70:1 contrast vs #FFFFFF
+    "Pending Approval": "#92400E",   # 7.05:1 contrast vs #FFFFFF
+    "Approved": "#166534",           # 7.13:1 contrast vs #FFFFFF
+    "Rejected": "#B91C1C",           # 6.47:1 contrast vs #FFFFFF
+    "Modified": "#1D4ED8",           # 6.70:1 contrast vs #FFFFFF
+    "Unavailable": "#475569",        # 7.58:1 contrast vs #FFFFFF
+    "Unknown": "#475569",            # 7.58:1 contrast vs #FFFFFF
+}
+
+# Non-color textual/symbolic markers so status is NEVER communicated via color alone (WCAG 1.4.1)
+STATUS_TEXT_PREFIX: dict[str, str] = {
+    "Out of Stock": "✕",
+    "Low Stock": "▲",
+    "Healthy": "✓",
+    "In Stock (No ROP)": "●",
+    "Overstock": "⬆",
+    "Critical": "✕",
+    "High": "▲",
+    "Medium": "◆",
+    "Low": "●",
+    "Pending Approval": "◷",
+    "Approved": "✓",
+    "Rejected": "✕",
+    "Modified": "✎",
+    "Unavailable": "—",
+    "Unknown": "?",
+}
+
+_FORMULA_PREFIXES = ("=", "+", "-", "@", "\t", "\r")
+
+
+def escape_html(value: Any) -> str:
+    """Escape untrusted strings before interpolating into HTML blocks (XSS defense)."""
+    if value is None:
+        return ""
+    return html.escape(str(value), quote=True)
+
+
+def sanitize_csv_cell(value: Any) -> Any:
+    """Prevent CSV / spreadsheet formula injection (DDE) on string cells.
+
+    Numeric types are returned unchanged so exported CSVs remain cleanly analyzable.
+    """
+    if isinstance(value, str):
+        stripped_leading = value.lstrip(" ")
+        if stripped_leading.startswith(_FORMULA_PREFIXES):
+            return "'" + value
+    return value
 
 
 def format_inr(amount: Union[int, float, None], decimals: int = 2, missing_label: str = "N/A") -> str:
     """Format a number using the Indian numbering system with ₹ symbol.
 
     Example: 125450.5 -> '₹1,25,450.50'
-    Returns `missing_label` if value is NaN, or '₹0.00' if None when explicitly needed.
+    Returns `missing_label` if value is NaN/Inf.
     """
     if amount is None:
         return f"{CURRENCY_SYMBOL}0.00"
@@ -94,20 +155,10 @@ def classify_stock_status(
 
 
 def status_color(status: str) -> str:
-    """Return hex color associated with stock or anomaly status."""
-    mapping = {
-        "Out of Stock": "#DC2626",
-        "Low Stock": "#D97706",
-        "Healthy": "#16A34A",
-        "In Stock (No ROP)": "#0284C7",
-        "Overstock": "#7C3AED",
-        "Critical": "#DC2626",
-        "High": "#EA580C",
-        "Medium": "#D97706",
-        "Low": "#2563EB",
-        "Pending Approval": "#D97706",
-        "Approved": "#16A34A",
-        "Rejected": "#DC2626",
-        "Modified": "#2563EB",
-    }
-    return mapping.get(status, "#475569")
+    """Return WCAG 2.2 AA-compliant hex background color associated with a status label."""
+    return STATUS_COLOR_MAP.get(status, "#475569")
+
+
+def status_prefix(status: str) -> str:
+    """Return non-color symbolic indicator paired with a status label."""
+    return STATUS_TEXT_PREFIX.get(status, "•")

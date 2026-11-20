@@ -6,22 +6,35 @@ Never silently fabricates missing business metrics (prices, sales history, suppl
 
 from __future__ import annotations
 
+import atexit
 import io
 import json
+import logging
 import os
 import re
 import shutil
 import tempfile
 import uuid
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, BinaryIO, Optional, Union
 
 import numpy as np
 import pandas as pd
 
+from config import MAX_UPLOAD_FILE_SIZE_BYTES, MAX_UPLOAD_FILE_SIZE_MB, MAX_UPLOAD_ROWS
 from database.db import get_connection, init_db
 from utils.helpers import utc_now_iso
+
+logger = logging.getLogger(__name__)
+_ACTIVE_SESSION_DIRS: set[str] = set()
+
+
+def _cleanup_all_registered_dirs() -> None:
+    for d in list(_ACTIVE_SESSION_DIRS):
+        cleanup_session_temp_dir(d)
+
+
+atexit.register(_cleanup_all_registered_dirs)
 
 
 SUPPORTED_EXTENSIONS = {".csv", ".xlsx", ".xls"}
@@ -304,7 +317,8 @@ def list_excel_sheets(source: Union[bytes, BinaryIO, str, Path], filename: Optio
             f"Install it with `pip install {engine}` or save the file as CSV/XLSX."
         ) from exc
     except Exception as exc:
-        raise DataIngestionError(f"Could not open Excel file '{fname}': {exc}") from exc
+        logger.warning("Failed opening Excel file %s: %s", fname, exc)
+        raise DataIngestionError(f"Could not open Excel file '{fname}'. Please verify it is a valid, unencrypted Excel workbook.") from exc
 
 
 def read_uploaded_file(
@@ -317,7 +331,9 @@ def read_uploaded_file(
     Returns metadata dict with raw_df, file_name, file_size_bytes, file_size_label,
     file_type, sheet_names, selected_sheet, and warnings.
     """
-    raw_bytes, fname = _read_bytes(source, filename)
+    raw_bytes, raw_fname = _read_bytes(source, filename)
+    # Strip any directory components to prevent path-traversal tricks in filenames
+    fname = Path(str(raw_fname).replace("\\", "/")).name or "uploaded_file.csv"
     size_bytes = len(raw_bytes)
     ext = Path(fname).suffix.lower()
 
@@ -328,6 +344,12 @@ def read_uploaded_file(
 
     if size_bytes == 0:
         raise DataIngestionError(f"The uploaded file '{fname}' is empty (0 bytes).")
+
+    if size_bytes > MAX_UPLOAD_FILE_SIZE_BYTES:
+        raise DataIngestionError(
+            f"Uploaded file '{fname}' ({format_file_size(size_bytes)}) exceeds the maximum allowed size of "
+            f"{MAX_UPLOAD_FILE_SIZE_MB:.0f} MB."
+        )
 
     warnings: list[str] = []
     sheet_names: list[str] = []
@@ -348,9 +370,11 @@ def read_uploaded_file(
             except pd.errors.EmptyDataError as exc:
                 raise DataIngestionError(f"The CSV file '{fname}' contains no data rows or headers.") from exc
             except Exception as exc:
-                raise DataIngestionError(f"Failed to parse CSV file '{fname}': {exc}") from exc
+                logger.warning("Failed parsing CSV file %s: %s", fname, exc)
+                raise DataIngestionError(f"Failed to parse CSV file '{fname}'. Please check delimiter formatting and column headers.") from exc
         if df is None:
-            raise DataIngestionError(f"Could not decode CSV file '{fname}': {last_err}")
+            logger.warning("Failed decoding CSV file %s: %s", fname, last_err)
+            raise DataIngestionError(f"Could not decode CSV file '{fname}'. Please save the file using UTF-8 encoding.")
     else:
         engine = "openpyxl" if ext == ".xlsx" else "xlrd"
         try:
@@ -370,7 +394,8 @@ def read_uploaded_file(
         except DataIngestionError:
             raise
         except Exception as exc:
-            raise DataIngestionError(f"Failed to read Excel file '{fname}': {exc}") from exc
+            logger.warning("Failed reading Excel file %s: %s", fname, exc)
+            raise DataIngestionError(f"Failed to read Excel file '{fname}'. Please verify the workbook is not corrupted or password-protected.") from exc
 
     # Drop completely empty unnamed columns/rows that often appear in Excel exports
     df = df.dropna(how="all").reset_index(drop=True)
@@ -401,6 +426,11 @@ def read_uploaded_file(
     if df.empty or len(df.columns) == 0:
         raise DataIngestionError(
             f"The uploaded file '{fname}' has headers but 0 data rows (or no usable columns)."
+        )
+
+    if len(df) > MAX_UPLOAD_ROWS:
+        raise DataIngestionError(
+            f"Uploaded file '{fname}' contains {len(df):,} rows, exceeding the safe limit of {MAX_UPLOAD_ROWS:,} rows."
         )
 
     return {
@@ -827,6 +857,13 @@ def validate_and_preprocess_dataset(
     }
 
 
+def _last_non_null(grp: pd.DataFrame, col: str) -> Any:
+    """Return the last non-null value in column `col` of DataFrame group `grp`, or None."""
+    if col in grp.columns and grp[col].notna().any():
+        return grp[col].dropna().iloc[-1]
+    return None
+
+
 def create_isolated_session_db(
     cleaned_df: pd.DataFrame,
     capabilities: dict[str, Any],
@@ -842,6 +879,11 @@ def create_isolated_session_db(
         cleanup_session_temp_dir(previous_temp_dir)
 
     temp_dir = Path(tempfile.mkdtemp(prefix="stock_sentry_user_"))
+    try:
+        os.chmod(temp_dir, 0o700)
+    except OSError:
+        pass
+    _ACTIVE_SESSION_DIRS.add(str(temp_dir))
     db_path = temp_dir / f"session_{uuid.uuid4().hex[:10]}.db"
     init_db(db_path)
 
@@ -855,18 +897,15 @@ def create_isolated_session_db(
     # 1. Build unique product catalog (taking latest non-null values per product_id)
     product_rows = []
     for pid, grp in df.groupby("product_id", sort=True):
-        last_non_null = lambda col: (
-            grp[col].dropna().iloc[-1] if (col in grp.columns and grp[col].notna().any()) else None
-        )
-        pname = str(last_non_null("product_name") or pid)
-        cat = str(last_non_null("category") or "Uncategorized")
-        unit = str(last_non_null("unit") or "unit")
-        cur_stock_val = last_non_null("current_stock")
+        pname = str(_last_non_null(grp, "product_name") or pid)
+        cat = str(_last_non_null(grp, "category") or "Uncategorized")
+        unit = str(_last_non_null(grp, "unit") or "unit")
+        cur_stock_val = _last_non_null(grp, "current_stock")
         cur_stock = max(0, int(round(float(cur_stock_val)))) if cur_stock_val is not None else 0
-        sell_p = last_non_null("selling_price")
-        cost_p = last_non_null("cost_price")
-        rop = last_non_null("reorder_point")
-        target = last_non_null("target_stock")
+        sell_p = _last_non_null(grp, "selling_price")
+        cost_p = _last_non_null(grp, "cost_price")
+        rop = _last_non_null(grp, "reorder_point")
+        target = _last_non_null(grp, "target_stock")
 
         product_rows.append(
             (
@@ -883,22 +922,25 @@ def create_isolated_session_db(
             )
         )
 
-    # 2. Build sales table from actual positive units_sold rows
+    # 2. Build sales table from actual positive units_sold rows (vectorized extraction)
     sales_rows = []
     if "units_sold" in df.columns:
-        sale_idx = 1
-        for _, row in df.iterrows():
-            qty = row.get("units_sold")
-            if pd.isna(qty) or float(qty) <= 0:
-                continue
-            dt_val = row.get("transaction_date") if "transaction_date" in df.columns else None
-            dt_str = dt_val.strftime("%Y-%m-%d") if pd.notna(dt_val) else None
-            sp_val = row.get("selling_price") if "selling_price" in df.columns else None
-            sp = round(float(sp_val), 2) if pd.notna(sp_val) else None
-            sales_rows.append(
-                (f"US-{sale_idx:05d}", dt_str, str(row["product_id"]), int(round(float(qty))), sp)
-            )
-            sale_idx += 1
+        sales_sub = df[df["units_sold"].notna() & (df["units_sold"] > 0)]
+        if not sales_sub.empty:
+            pids_s = sales_sub["product_id"].astype(str).tolist()
+            qtys_s = sales_sub["units_sold"].round().astype(int).tolist()
+            if "transaction_date" in sales_sub.columns:
+                dts_s = [d.strftime("%Y-%m-%d") if pd.notna(d) else None for d in sales_sub["transaction_date"]]
+            else:
+                dts_s = [None] * len(pids_s)
+            if "selling_price" in sales_sub.columns:
+                sps_s = [round(float(v), 2) if pd.notna(v) else None for v in sales_sub["selling_price"]]
+            else:
+                sps_s = [None] * len(pids_s)
+            sales_rows = [
+                (f"US-{idx:05d}", dt_str, pid_v, qty_v, sp_v)
+                for idx, (pid_v, qty_v, dt_str, sp_v) in enumerate(zip(pids_s, qtys_s, dts_s, sps_s), start=1)
+            ]
 
     # 3. Build suppliers table from actual supplier rows (never fabricating missing metrics!)
     supplier_rows = []
@@ -907,11 +949,8 @@ def create_isolated_session_db(
         sup_counter = 1
         sub = df[df["supplier_name"].notna()].copy()
         for (sname, pid), grp in sub.groupby(["supplier_name", "product_id"], sort=True):
-            last_non_null = lambda col: (
-                grp[col].dropna().iloc[-1] if (col in grp.columns and grp[col].notna().any()) else None
-            )
             sname_str = str(sname).strip()
-            sid_raw = last_non_null("supplier_id")
+            sid_raw = _last_non_null(grp, "supplier_id")
             if sid_raw is not None:
                 sid = str(sid_raw).strip()
             else:
@@ -920,13 +959,13 @@ def create_isolated_session_db(
                     sup_counter += 1
                 sid = sup_name_to_id[sname_str]
 
-            uprice = last_non_null("supplier_unit_price")
+            uprice = _last_non_null(grp, "supplier_unit_price")
             if uprice is None:
-                uprice = last_non_null("cost_price")
-            ddays = last_non_null("delivery_days")
-            aqty = last_non_null("supplier_available_qty")
-            rel = last_non_null("reliability_score")
-            moq = last_non_null("min_order_qty")
+                uprice = _last_non_null(grp, "cost_price")
+            ddays = _last_non_null(grp, "delivery_days")
+            aqty = _last_non_null(grp, "supplier_available_qty")
+            rel = _last_non_null(grp, "reliability_score")
+            moq = _last_non_null(grp, "min_order_qty")
 
             supplier_rows.append(
                 (
@@ -941,29 +980,29 @@ def create_isolated_session_db(
                 )
             )
 
-    # 4. Build stock_movements table if movement columns were mapped
+    # 4. Build stock_movements table if movement columns were mapped (vectorized extraction)
     movement_rows = []
     if "movement_type" in df.columns and "movement_quantity" in df.columns:
-        mov_idx = 1
-        for _, row in df.iterrows():
-            mtype = row.get("movement_type")
-            mqty = row.get("movement_quantity")
-            if pd.isna(mtype) or pd.isna(mqty) or int(round(float(mqty))) == 0:
-                continue
-            dt_val = row.get("transaction_date") if "transaction_date" in df.columns else None
-            dt_str = dt_val.strftime("%Y-%m-%d") if pd.notna(dt_val) else None
-            rem = str(row.get("remarks")) if ("remarks" in df.columns and pd.notna(row.get("remarks"))) else ""
-            movement_rows.append(
-                (
-                    f"UM-{mov_idx:05d}",
-                    dt_str,
-                    str(row["product_id"]),
-                    str(mtype).strip().upper(),
-                    int(round(float(mqty))),
-                    rem[:250],
+        mov_sub = df[df["movement_type"].notna() & df["movement_quantity"].notna()]
+        mov_sub = mov_sub[mov_sub["movement_quantity"].round().astype(int) != 0]
+        if not mov_sub.empty:
+            pids_m = mov_sub["product_id"].astype(str).tolist()
+            types_m = mov_sub["movement_type"].astype(str).str.strip().str.upper().tolist()
+            qtys_m = mov_sub["movement_quantity"].round().astype(int).tolist()
+            if "transaction_date" in mov_sub.columns:
+                dts_m = [d.strftime("%Y-%m-%d") if pd.notna(d) else None for d in mov_sub["transaction_date"]]
+            else:
+                dts_m = [None] * len(pids_m)
+            if "remarks" in mov_sub.columns:
+                rems_m = [str(r)[:250] if pd.notna(r) else "" for r in mov_sub["remarks"]]
+            else:
+                rems_m = [""] * len(pids_m)
+            movement_rows = [
+                (f"UM-{idx:05d}", dt_str, pid_v, mt_v, q_v, rem_v)
+                for idx, (pid_v, mt_v, q_v, dt_str, rem_v) in enumerate(
+                    zip(pids_m, types_m, qtys_m, dts_m, rems_m), start=1
                 )
-            )
-            mov_idx += 1
+            ]
 
     with get_connection(db_path) as conn:
         conn.executemany(
@@ -1035,9 +1074,10 @@ def cleanup_session_temp_dir(temp_dir: Optional[Union[str, Path]]) -> None:
     """Safely remove a session's temporary SQLite directory."""
     if not temp_dir:
         return
+    _ACTIVE_SESSION_DIRS.discard(str(temp_dir))
     try:
         p = Path(temp_dir)
         if p.exists() and p.is_dir() and "stock_sentry_user_" in p.name:
             shutil.rmtree(p, ignore_errors=True)
-    except Exception:
-        pass
+    except OSError as exc:
+        logger.warning("Failed to remove temporary session directory %s: %s", temp_dir, exc)

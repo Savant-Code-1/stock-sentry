@@ -51,9 +51,23 @@ def get_all_products(
     df["unit"] = df["unit"].fillna("unit")
     for _num_col in ("current_stock", "selling_price", "cost_price", "reorder_point", "target_stock"):
         df[_num_col] = pd.to_numeric(df[_num_col], errors="coerce")
-    df["stock_status"] = df.apply(
-        lambda r: classify_stock_status(r["current_stock"], r["reorder_point"]),
-        axis=1,
+    # Vectorized stock status classification (faster than row-by-row DataFrame.apply)
+    stk_num = df["current_stock"]
+    rop_num = df["reorder_point"]
+    df["stock_status"] = np.select(
+        [
+            stk_num.isna(),
+            stk_num <= 0,
+            rop_num.isna(),
+            stk_num <= rop_num,
+        ],
+        [
+            "Unknown",
+            "Out of Stock",
+            "In Stock (No ROP)",
+            "Low Stock",
+        ],
+        default="Healthy",
     )
 
     # Overstock detection: strictly when target_stock is provided and current_stock > target_stock

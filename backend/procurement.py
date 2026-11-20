@@ -13,8 +13,8 @@ from typing import Optional, Union
 import numpy as np
 import pandas as pd
 
-from backend.forecasting import check_forecasting_readiness, forecast_all_products
-from backend.supplier import rank_suppliers_for_product
+from backend.forecasting import forecast_all_products
+from backend.supplier import rank_supplier_dataframe
 from config import DEFAULT_BUDGET_LIMIT, MAX_STOCK_CAPACITY_MULTIPLIER
 from database.db import fetch_all, fetch_one, get_connection
 from utils.helpers import format_inr, utc_now_iso
@@ -100,25 +100,65 @@ def generate_purchase_recommendations(
     budget_limit: Optional[float] = DEFAULT_BUDGET_LIMIT,
     horizon_days: int = 7,
     db_path: DbPath = None,
+    precomputed_forecast_df: Optional[pd.DataFrame] = None,
 ) -> list[dict]:
     """Generate prioritized purchase-order recommendations with budget and supplier checks.
 
-    Works dynamically on both full datasets and partial uploaded datasets without
-    fabricating supplier prices, delivery days, or missing target stock.
+    Batches products, POs, and supplier offers in a single SQLite connection and reuses
+    an optional precomputed forecast DataFrame to avoid redundant queries.
     """
-    products = fetch_all("SELECT * FROM products ORDER BY product_id ASC", db_path=db_path)
-    if not products:
-        return []
+    with get_connection(db_path) as conn:
+        products = [dict(r) for r in conn.execute("SELECT * FROM products ORDER BY product_id ASC").fetchall()]
+        if not products:
+            return []
 
-    readiness = check_forecasting_readiness(db_path=db_path)
+        po_rows = conn.execute(
+            """
+            SELECT product_id, status, SUM(quantity) AS qty
+            FROM purchase_orders
+            WHERE status IN ('Approved', 'Pending Approval', 'Modified')
+            GROUP BY product_id, status
+            """
+        ).fetchall()
+
+        sup_rows = [
+            dict(r)
+            for r in conn.execute(
+                """
+                SELECT s.id, s.supplier_id, s.supplier_name, s.product_id,
+                       p.product_name, p.category, s.unit_price, s.delivery_days,
+                       s.available_quantity, s.reliability_score, s.min_order_qty
+                FROM suppliers s
+                JOIN products p ON s.product_id = p.product_id
+                """
+            ).fetchall()
+        ]
+
+    incoming_map: dict[str, int] = {}
+    pending_map: dict[str, int] = {}
+    for r in po_rows:
+        if r["status"] == "Approved":
+            incoming_map[r["product_id"]] = incoming_map.get(r["product_id"], 0) + int(r["qty"])
+        else:
+            pending_map[r["product_id"]] = pending_map.get(r["product_id"], 0) + int(r["qty"])
+
+    sup_groups: dict[str, pd.DataFrame] = {}
+    if sup_rows:
+        all_sup_df = pd.DataFrame(sup_rows)
+        for _num_col in ("unit_price", "delivery_days", "available_quantity", "reliability_score", "min_order_qty"):
+            all_sup_df[_num_col] = pd.to_numeric(all_sup_df[_num_col], errors="coerce")
+        for pid_key, grp_df in all_sup_df.groupby("product_id", sort=False):
+            sup_groups[str(pid_key)] = grp_df
+
+    forecast_df = (
+        precomputed_forecast_df
+        if precomputed_forecast_df is not None
+        else forecast_all_products(horizon_days=horizon_days, db_path=db_path)
+    )
     fc_map: dict[str, dict] = {}
-    if readiness["ready"]:
-        forecast_df = forecast_all_products(horizon_days=horizon_days, db_path=db_path)
-        for _, r in forecast_df.iterrows():
-            fc_map[r["product_id"]] = r.to_dict()
-
-    incoming_map = get_incoming_stock_by_product(db_path=db_path)
-    pending_map = get_pending_po_map(db_path=db_path)
+    if forecast_df is not None and not forecast_df.empty:
+        for rec_dict in forecast_df.to_dict(orient="records"):
+            fc_map[rec_dict["product_id"]] = rec_dict
 
     # Sort products so most urgent (out-of-stock / critical forecast risk) appear first
     def _sort_key(p: dict) -> tuple:
@@ -176,7 +216,7 @@ def generate_purchase_recommendations(
             continue
 
         base_need = max(1, effective_target - current_stock - incoming_qty)
-        ranked = rank_suppliers_for_product(pid, required_qty=base_need, db_path=db_path)
+        ranked = rank_supplier_dataframe(sup_groups.get(pid), required_qty=base_need)
 
         supplier_id = None
         supplier_name = "Not Mapped (No Supplier Data)"

@@ -22,12 +22,21 @@ DEFAULT_DB_PATH = Path(
 # Application metadata
 APP_NAME = "Stock Sentry"
 APP_TAGLINE = "AI-Agent-Powered Inventory Monitoring & Procurement Assistant"
-APP_VERSION = "1.0.0"
+APP_VERSION = "1.2.0"
 CURRENCY_SYMBOL = "₹"
+
+# Security & upload guardrails (prevents memory exhaustion / DoS on untrusted files)
+MAX_UPLOAD_FILE_SIZE_MB = float(os.getenv("MAX_UPLOAD_FILE_SIZE_MB", "25.0"))
+MAX_UPLOAD_FILE_SIZE_BYTES = int(MAX_UPLOAD_FILE_SIZE_MB * 1024 * 1024)
+MAX_UPLOAD_ROWS = int(os.getenv("MAX_UPLOAD_ROWS", "100000"))
+
+# UI performance & pagination defaults
+DEFAULT_TABLE_PAGE_SIZE = int(os.getenv("TABLE_PAGE_SIZE", "25"))
+CACHE_TTL_SECONDS = int(os.getenv("CACHE_TTL_SECONDS", "300"))
 
 # Forecasting defaults (statistical baseline)
 DEFAULT_FORECAST_WINDOW_DAYS = int(os.getenv("FORECAST_WINDOW_DAYS", "14"))
-DEFAULT_FORECAST_HORIZON_DAYS = int(os.getenv("FORECAST_HORIZON_DAYS", "7"))
+DEFAULT_FORECAST_HORIZON_DAYS = int(os.getenv("DEFAULT_FORECAST_HORIZON_DAYS", "7"))
 DEFAULT_LEAD_TIME_DAYS = int(os.getenv("DEFAULT_LEAD_TIME_DAYS", "3"))
 DEFAULT_SAFETY_STOCK_DAYS = int(os.getenv("DEFAULT_SAFETY_STOCK_DAYS", "2"))
 EMA_ALPHA = float(os.getenv("EMA_ALPHA", "0.35"))

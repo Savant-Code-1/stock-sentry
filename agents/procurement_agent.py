@@ -25,11 +25,13 @@ class ProcurementAgent:
         self,
         budget_limit: Optional[float] = DEFAULT_BUDGET_LIMIT,
         horizon_days: int = 7,
+        precomputed_forecast_df: Optional[pd.DataFrame] = None,
     ) -> dict:
         recs = proc_backend.generate_purchase_recommendations(
             budget_limit=budget_limit,
             horizon_days=horizon_days,
             db_path=self.db_path,
+            precomputed_forecast_df=precomputed_forecast_df,
         )
         priced_costs = [r["estimated_total_cost"] for r in recs if r["estimated_total_cost"] is not None]
         total_est = round(sum(priced_costs), 2) if priced_costs else None

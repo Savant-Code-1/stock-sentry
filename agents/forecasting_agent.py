@@ -92,4 +92,5 @@ class ForecastingAgent:
             "within_days": within_days,
             "count": int(len(at_risk)),
             "products": at_risk,
+            "portfolio_df": df,
         }

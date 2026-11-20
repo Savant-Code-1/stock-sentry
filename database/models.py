@@ -99,4 +99,7 @@ SCHEMA_STATEMENTS = [
     "CREATE INDEX IF NOT EXISTS idx_suppliers_product ON suppliers(product_id)",
     "CREATE INDEX IF NOT EXISTS idx_po_status ON purchase_orders(status)",
     "CREATE INDEX IF NOT EXISTS idx_audit_order ON audit_logs(order_id)",
+    "CREATE INDEX IF NOT EXISTS idx_suppliers_product_avail ON suppliers(product_id, available_quantity)",
+    "CREATE INDEX IF NOT EXISTS idx_sales_date ON sales(date)",
+    "CREATE INDEX IF NOT EXISTS idx_po_product_status ON purchase_orders(product_id, status)",
 ]

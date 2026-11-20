@@ -44,11 +44,14 @@ class SupervisorAgent:
         return "Local Rule-Based Assistant (Live Active Dataset — No External LLM API)"
 
     def run_store_health_check(self) -> dict:
-        """Execute a full multi-agent workflow and aggregate store-wide health metrics."""
+        """Execute a single-pass multi-agent workflow without redundant forecast recalculation."""
         inv = self.inventory_agent.get_overview()["summary"]
         risk_5d = self.forecasting_agent.get_stockout_risk_products(within_days=5)
+        portfolio_fc = risk_5d.get("portfolio_df")
         anoms = self.anomaly_agent.scan_anomalies()
-        recs = self.procurement_agent.recommend_orders()
+        recs = self.procurement_agent.recommend_orders(
+            precomputed_forecast_df=portfolio_fc if risk_5d.get("ready") else pd.DataFrame()
+        )
         sup_overview = self.supplier_agent.get_supplier_overview()
         orders_df = self.procurement_agent.list_orders()
         pending_count = (
@@ -76,6 +79,9 @@ class SupervisorAgent:
             "recommended_orders_count": recs["count"],
             "recommended_orders_cost": recs["total_estimated_cost"],
             "pending_purchase_orders": pending_count,
+            "_anomalies_detail": anoms,
+            "_recommendations_detail": recs,
+            "_supplier_overview": sup_overview,
         }
 
     def _extract_days(self, text: str, default: int = 5) -> int:

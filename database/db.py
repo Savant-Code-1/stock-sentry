@@ -22,11 +22,14 @@ def resolve_db_path(db_path: Optional[Union[str, Path]] = None) -> Path:
 def get_connection(
     db_path: Optional[Union[str, Path]] = None,
 ) -> Generator[sqlite3.Connection, None, None]:
-    """Context manager yielding a configured SQLite connection."""
+    """Context manager yielding a performance-tuned, foreign-key-enforced SQLite connection."""
     target = resolve_db_path(db_path)
     conn = sqlite3.connect(str(target), timeout=15.0)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON;")
+    conn.execute("PRAGMA temp_store = MEMORY;")
+    conn.execute("PRAGMA cache_size = -16000;")
+    conn.execute("PRAGMA synchronous = NORMAL;")
     try:
         yield conn
         conn.commit()

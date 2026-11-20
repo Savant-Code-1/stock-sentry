@@ -1,23 +1,23 @@
-"""Dynamic downloadable CSV and Markdown executive report generation."""
+"""Dynamic downloadable CSV and Markdown executive report generation with CSV injection defense."""
 
 from __future__ import annotations
 
-from pathlib import Path
-from typing import Any, Optional, Union
+from typing import Any, Optional
 
 import pandas as pd
 
 from agents.supervisor_agent import SupervisorAgent
-from utils.helpers import format_inr, utc_now_iso
-
-DbPath = Optional[Union[str, Path]]
+from utils.helpers import format_inr, sanitize_csv_cell, utc_now_iso
 
 
 def dataframe_to_csv_bytes(df: pd.DataFrame) -> bytes:
-    """Encode a DataFrame as UTF-8 with BOM CSV bytes (opens cleanly in Excel)."""
+    """Encode a DataFrame as UTF-8 with BOM CSV bytes while neutralizing formula injection."""
     if df is None or df.empty:
         return b""
-    return df.to_csv(index=False).encode("utf-8-sig")
+    safe_df = df.copy()
+    for col in safe_df.select_dtypes(include=["object", "string"]).columns:
+        safe_df[col] = safe_df[col].map(sanitize_csv_cell)
+    return safe_df.to_csv(index=False).encode("utf-8-sig")
 
 
 def build_executive_markdown_report(
@@ -25,14 +25,18 @@ def build_executive_markdown_report(
     dataset_label: str,
     quality_report: Optional[dict[str, Any]] = None,
     capabilities: Optional[dict[str, Any]] = None,
+    precomputed_health: Optional[dict[str, Any]] = None,
+    precomputed_sales: Optional[dict[str, Any]] = None,
 ) -> str:
-    """Generate a comprehensive Markdown executive report strictly from active dataset metrics."""
-    health = supervisor.run_store_health_check()
+    """Generate a comprehensive Markdown executive report in a single multi-agent pass."""
+    health = precomputed_health if precomputed_health is not None else supervisor.run_store_health_check()
     inv = health["inventory_summary"]
-    sales = supervisor.inventory_agent.get_sales_analytics()
-    anoms = supervisor.anomaly_agent.scan_anomalies()
-    recs = supervisor.procurement_agent.recommend_orders()
-    sup_overview = supervisor.supplier_agent.get_supplier_overview()
+    sales = precomputed_sales if precomputed_sales is not None else supervisor.inventory_agent.get_sales_analytics()
+    anoms = health.get("_anomalies_detail") or supervisor.anomaly_agent.scan_anomalies()
+    recs = health.get("_recommendations_detail") or supervisor.procurement_agent.recommend_orders()
+    sup_overview = health.get("_supplier_overview")
+    if sup_overview is None:
+        sup_overview = supervisor.supplier_agent.get_supplier_overview()
 
     lines = [
         "# Stock Sentry — Dynamic Inventory Intelligence Report",
@@ -84,7 +88,12 @@ def build_executive_markdown_report(
 
     lines.append("## 5. Anomaly Detection")
     lines.append(f"- **Total Flagged Unusual Events:** {anoms['total']}")
-    lines.append(f"- **Severity Breakdown:** Critical={anoms['severity_counts'].get('Critical', 0)}, High={anoms['severity_counts'].get('High', 0)}, Medium={anoms['severity_counts'].get('Medium', 0)}, Low={anoms['severity_counts'].get('Low', 0)}")
+    lines.append(
+        f"- **Severity Breakdown:** Critical={anoms['severity_counts'].get('Critical', 0)}, "
+        f"High={anoms['severity_counts'].get('High', 0)}, "
+        f"Medium={anoms['severity_counts'].get('Medium', 0)}, "
+        f"Low={anoms['severity_counts'].get('Low', 0)}"
+    )
     lines.append(f"- **Disclaimer:** {anoms['disclaimer']}")
     for a in anoms["anomalies"][:10]:
         lines.append(f"  - [{a['severity']}] {a['product_name']} — {a['detected_event']}: {a['actual_value']} (Expected: {a['expected_value']})")
@@ -106,8 +115,8 @@ def build_executive_markdown_report(
     lines.append("## 7. Supplier Analysis")
     if not sup_overview.empty:
         lines.append(f"- **Unique Suppliers Analyzed:** {len(sup_overview)}")
-        for _, sr in sup_overview.head(10).iterrows():
-            lines.append(f"  - {sr['supplier_name']} ({sr['products_supplied']} SKU(s))")
+        for sr in sup_overview.head(10).itertuples(index=False):
+            lines.append(f"  - {sr.supplier_name} ({sr.products_supplied} SKU(s))")
     else:
         lines.append("- Supplier analysis unavailable (no `Supplier / Vendor` column mapped).")
     lines.append("")

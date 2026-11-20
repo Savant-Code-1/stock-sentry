@@ -9,7 +9,6 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Optional, Union
 
-import numpy as np
 import pandas as pd
 
 from config import (
@@ -19,22 +18,46 @@ from config import (
     SALES_SPIKE_Z_THRESHOLD,
     SUDDEN_STOCK_DROP_PCT,
 )
-from database.db import fetch_all
+from database.db import get_connection
 from utils.helpers import utc_now_iso
 
 DbPath = Optional[Union[str, Path]]
 
 
 def run_anomaly_scan_detailed(db_path: DbPath = None) -> dict:
-    """Run all applicable anomaly checks and transparently report which checks ran vs skipped."""
-    products = fetch_all("SELECT * FROM products", db_path=db_path)
-    if not products:
-        return {
-            "anomalies": [],
-            "checks_executed": [],
-            "checks_skipped": ["All checks skipped: no product records loaded."],
-            "disclaimer": ANOMALY_DISCLAIMER,
-        }
+    """Run all applicable anomaly checks in a single batched DB read and report coverage."""
+    with get_connection(db_path) as conn:
+        products = [dict(r) for r in conn.execute("SELECT * FROM products").fetchall()]
+        if not products:
+            return {
+                "anomalies": [],
+                "checks_executed": [],
+                "checks_skipped": ["All checks skipped: no product records loaded."],
+                "disclaimer": ANOMALY_DISCLAIMER,
+            }
+
+        sales_rows = [
+            dict(r)
+            for r in conn.execute(
+                """
+                SELECT product_id, date, SUM(quantity_sold) AS daily_qty
+                FROM sales
+                WHERE date IS NOT NULL AND TRIM(date) != ''
+                GROUP BY product_id, date
+                ORDER BY product_id, date ASC
+                """
+            ).fetchall()
+        ]
+        mov_rows = [
+            dict(r)
+            for r in conn.execute(
+                """
+                SELECT movement_id, date, product_id, movement_type, quantity, remarks
+                FROM stock_movements
+                ORDER BY date ASC, movement_id ASC
+                """
+            ).fetchall()
+        ]
 
     prod_map = {p["product_id"]: p for p in products}
     anomalies: list[dict] = []
@@ -42,65 +65,60 @@ def run_anomaly_scan_detailed(db_path: DbPath = None) -> dict:
     checks_skipped: list[str] = []
     detected_at = utc_now_iso()
 
+    sales_df = pd.DataFrame(sales_rows) if sales_rows else pd.DataFrame()
+    if not sales_df.empty:
+        sales_df["daily_qty"] = pd.to_numeric(sales_df["daily_qty"], errors="coerce").fillna(0.0)
+        sales_df["date_dt"] = pd.to_datetime(sales_df["date"], errors="coerce")
+
     # 1. Unusually High Sales Spikes (Z-score on per-product daily sales)
-    sales_rows = fetch_all(
-        """
-        SELECT product_id, date, SUM(quantity_sold) AS daily_qty
-        FROM sales
-        WHERE date IS NOT NULL AND TRIM(date) != ''
-        GROUP BY product_id, date
-        ORDER BY product_id, date ASC
-        """,
-        db_path=db_path,
-    )
-    if sales_rows:
-        sales_df = pd.DataFrame(sales_rows)
-        eligible_sales_skus = sum(1 for _, g in sales_df.groupby("product_id") if len(g) >= 5)
+    if not sales_df.empty:
+        eligible_sales_skus = 0
+        for pid, grp in sales_df.groupby("product_id", sort=False):
+            if len(grp) < 5 or pid not in prod_map:
+                continue
+            eligible_sales_skus += 1
+            vals = grp["daily_qty"].to_numpy(dtype=float)
+            baseline = vals[:-1] if vals.size > 5 else vals
+            mean_val = float(baseline.mean())
+            std_val = float(baseline.std(ddof=0))
+            recent = grp.tail(4)
+
+            for row in recent.itertuples(index=False):
+                qty = float(row.daily_qty)
+                if std_val > 0:
+                    z_score = (qty - mean_val) / std_val
+                else:
+                    z_score = 3.0 if qty >= max(5.0, mean_val * 2.5) else 0.0
+
+                if z_score >= SALES_SPIKE_Z_THRESHOLD and qty >= max(8.0, mean_val * 2.2):
+                    severity = "High" if z_score >= 3.2 else "Medium"
+                    anomalies.append(
+                        {
+                            "anomaly_id": f"ANOM-SALE-{pid}-{row.date}",
+                            "product_id": pid,
+                            "product_name": prod_map[pid]["product_name"],
+                            "detected_event": "Unusually High Sales Spike",
+                            "expected_value": f"{mean_val:.1f} units/day (historical avg)",
+                            "actual_value": f"{int(qty)} units on {row.date} (z={z_score:.1f})",
+                            "severity": severity,
+                            "detection_time": detected_at,
+                            "explanation": (
+                                f"Recorded sales of {int(qty)} units on {row.date} are "
+                                f"{qty / max(mean_val, 0.1):.1f}x higher than the usual average "
+                                f"of {mean_val:.1f} units/day. Could indicate bulk customer purchase, "
+                                f"local demand surge, or a billing entry duplicate."
+                            ),
+                            "suggested_action": (
+                                "Verify the sales bill for bulk orders or entry typos, and check "
+                                "shelf stock to prepare an early restock if demand is genuine."
+                            ),
+                            "disclaimer": ANOMALY_DISCLAIMER,
+                        }
+                    )
         if eligible_sales_skus > 0:
             checks_executed.append(
                 f"Sales Spike Z-Score Analysis (z >= {SALES_SPIKE_Z_THRESHOLD}) across {eligible_sales_skus} SKU(s) with >=5 sales dates"
             )
-            for pid, grp in sales_df.groupby("product_id"):
-                if len(grp) < 5 or pid not in prod_map:
-                    continue
-                vals = grp["daily_qty"].astype(float)
-                baseline = vals.iloc[:-1] if len(vals) > 5 else vals
-                mean_val = float(baseline.mean())
-                std_val = float(baseline.std(ddof=0))
-                recent = grp.tail(4)
-
-                for _, row in recent.iterrows():
-                    qty = float(row["daily_qty"])
-                    if std_val > 0:
-                        z_score = (qty - mean_val) / std_val
-                    else:
-                        z_score = 3.0 if qty >= max(5.0, mean_val * 2.5) else 0.0
-
-                    if z_score >= SALES_SPIKE_Z_THRESHOLD and qty >= max(8.0, mean_val * 2.2):
-                        severity = "High" if z_score >= 3.2 else "Medium"
-                        anomalies.append(
-                            {
-                                "anomaly_id": f"ANOM-SALE-{pid}-{row['date']}",
-                                "product_id": pid,
-                                "product_name": prod_map[pid]["product_name"],
-                                "detected_event": "Unusually High Sales Spike",
-                                "expected_value": f"{mean_val:.1f} units/day (historical avg)",
-                                "actual_value": f"{int(qty)} units on {row['date']} (z={z_score:.1f})",
-                                "severity": severity,
-                                "detection_time": detected_at,
-                                "explanation": (
-                                    f"Recorded sales of {int(qty)} units on {row['date']} are "
-                                    f"{qty / max(mean_val, 0.1):.1f}x higher than the usual average "
-                                    f"of {mean_val:.1f} units/day. Could indicate bulk customer purchase, "
-                                    f"local demand surge, or a billing entry duplicate."
-                                ),
-                                "suggested_action": (
-                                    "Verify the sales bill for bulk orders or entry typos, and check "
-                                    "shelf stock to prepare an early restock if demand is genuine."
-                                ),
-                                "disclaimer": ANOMALY_DISCLAIMER,
-                            }
-                        )
         else:
             checks_skipped.append(
                 "Sales Spike Z-Score Analysis: requires at least 5 dated sales entries per SKU."
@@ -111,66 +129,59 @@ def run_anomaly_scan_detailed(db_path: DbPath = None) -> dict:
         )
 
     # 2, 3, 4. Movement-based anomaly checks (Reductions, Repeated Patterns, Ledger Variance)
-    mov_rows = fetch_all(
-        """
-        SELECT movement_id, date, product_id, movement_type, quantity, remarks
-        FROM stock_movements
-        ORDER BY date ASC, movement_id ASC
-        """,
-        db_path=db_path,
-    )
     if mov_rows:
         checks_executed.append(
             f"Stock Movement Drop, Repeated Adjustment Pattern & Ledger Variance Checks ({len(mov_rows)} movement logs)"
         )
         mov_df = pd.DataFrame(mov_rows)
+        mov_df["movement_type"] = mov_df["movement_type"].astype(str).str.upper()
+        mov_df["quantity"] = pd.to_numeric(mov_df["quantity"], errors="coerce").fillna(0).astype(int)
         mov_df["date_dt"] = pd.to_datetime(mov_df["date"], errors="coerce")
 
-        for _, row in mov_df.iterrows():
-            pid = row["product_id"]
+        # 2. Single large negative adjustment / damage drop
+        neg_adj = mov_df[(mov_df["movement_type"].isin(["ADJUSTMENT", "DAMAGE"])) & (mov_df["quantity"] < 0)]
+        for row in neg_adj.itertuples(index=False):
+            pid = row.product_id
             if pid not in prod_map:
                 continue
-            mtype = str(row["movement_type"]).upper()
-            qty = int(row["quantity"])
+            mtype = row.movement_type
+            qty = int(row.quantity)
             target_raw = prod_map[pid].get("target_stock")
             target = max(1, int(target_raw)) if target_raw is not None else max(1, int(prod_map[pid]["current_stock"]) + abs(qty))
+            abs_qty = abs(qty)
+            drop_pct = abs_qty / float(target)
+            if abs_qty >= LARGE_ADJUSTMENT_UNITS or drop_pct >= SUDDEN_STOCK_DROP_PCT:
+                severity = "Critical" if (abs_qty >= 25 or drop_pct >= 0.45) else "High"
+                event_label = (
+                    "Unexpected Stock Reduction"
+                    if mtype == "ADJUSTMENT"
+                    else "Sudden Large Damage / Shrinkage Entry"
+                )
+                anomalies.append(
+                    {
+                        "anomaly_id": f"ANOM-MOV-{row.movement_id}",
+                        "product_id": pid,
+                        "product_name": prod_map[pid]["product_name"],
+                        "detected_event": event_label,
+                        "expected_value": "Routine adjustment within ±5 units",
+                        "actual_value": f"{qty} units ({mtype}) on {row.date or 'undated'}",
+                        "severity": severity,
+                        "detection_time": detected_at,
+                        "explanation": (
+                            f"A single {mtype.lower()} movement reduced stock by {abs_qty} units "
+                            f"({drop_pct * 100:.0f}% of reference stock) on {row.date or 'undated entry'}. "
+                            f"Remark logged: '{row.remarks or 'None'}'."
+                        ),
+                        "suggested_action": (
+                            "Perform a physical shelf and backroom recount, and check whether "
+                            "unlogged counter sales or damaged packs explain the difference."
+                        ),
+                        "disclaimer": ANOMALY_DISCLAIMER,
+                    }
+                )
 
-            if mtype in {"ADJUSTMENT", "DAMAGE"} and qty < 0:
-                abs_qty = abs(qty)
-                drop_pct = abs_qty / float(target)
-                if abs_qty >= LARGE_ADJUSTMENT_UNITS or drop_pct >= SUDDEN_STOCK_DROP_PCT:
-                    severity = "Critical" if (abs_qty >= 25 or drop_pct >= 0.45) else "High"
-                    event_label = (
-                        "Unexpected Stock Reduction"
-                        if mtype == "ADJUSTMENT"
-                        else "Sudden Large Damage / Shrinkage Entry"
-                    )
-                    anomalies.append(
-                        {
-                            "anomaly_id": f"ANOM-MOV-{row['movement_id']}",
-                            "product_id": pid,
-                            "product_name": prod_map[pid]["product_name"],
-                            "detected_event": event_label,
-                            "expected_value": "Routine adjustment within ±5 units",
-                            "actual_value": f"{qty} units ({mtype}) on {row['date'] or 'undated'}",
-                            "severity": severity,
-                            "detection_time": detected_at,
-                            "explanation": (
-                                f"A single {mtype.lower()} movement reduced stock by {abs_qty} units "
-                                f"({drop_pct * 100:.0f}% of reference stock) on {row['date'] or 'undated entry'}. "
-                                f"Remark logged: '{row['remarks'] or 'None'}'."
-                            ),
-                            "suggested_action": (
-                                "Perform a physical shelf and backroom recount, and check whether "
-                                "unlogged counter sales or damaged packs explain the difference."
-                            ),
-                            "disclaimer": ANOMALY_DISCLAIMER,
-                        }
-                    )
-
-        # Repeated downward adjustments within 7 days
-        neg_adj = mov_df[(mov_df["movement_type"].isin(["ADJUSTMENT", "DAMAGE"])) & (mov_df["quantity"] < 0)]
-        for pid, grp in neg_adj.groupby("product_id"):
+        # 3. Repeated downward adjustments within 7 days
+        for pid, grp in neg_adj.groupby("product_id", sort=False):
             if len(grp) < 3 or pid not in prod_map:
                 continue
             valid_dated = grp[grp["date_dt"].notna()].sort_values("date_dt")
@@ -204,25 +215,28 @@ def run_anomaly_scan_detailed(db_path: DbPath = None) -> dict:
                     }
                 )
 
-        # Recorded Stock vs Expected Recent Ledger Stock
+        # 4. Recorded Stock vs Expected Recent Ledger Stock (pre-aggregated sales map — O(N) instead of O(N^2))
         dated_mov = mov_df[mov_df["date_dt"].notna()]
         if not dated_mov.empty:
             latest_mov_date = dated_mov["date_dt"].max()
-            recent_mov = dated_mov[dated_mov["date_dt"] >= latest_mov_date - pd.Timedelta(days=10)]
-            for pid, grp in recent_mov.groupby("product_id"):
+            cutoff = latest_mov_date - pd.Timedelta(days=10)
+            recent_mov = dated_mov[dated_mov["date_dt"] >= cutoff]
+
+            recent_sales_map: dict[str, int] = {}
+            if not sales_df.empty:
+                recent_s = sales_df[sales_df["date_dt"] >= cutoff]
+                if not recent_s.empty:
+                    recent_sales_map = (
+                        recent_s.groupby("product_id")["daily_qty"].sum().astype(int).to_dict()
+                    )
+
+            for pid, grp in recent_mov.groupby("product_id", sort=False):
                 if pid not in prod_map:
                     continue
                 restock_sum = int(grp[grp["movement_type"] == "RESTOCK"]["quantity"].sum())
                 if restock_sum < 30:
                     continue
-                recent_sales = 0
-                if sales_rows:
-                    sdf = pd.DataFrame(sales_rows)
-                    sdf["date_dt"] = pd.to_datetime(sdf["date"], errors="coerce")
-                    cutoff = latest_mov_date - pd.Timedelta(days=10)
-                    recent_sales = int(
-                        sdf[(sdf["product_id"] == pid) & (sdf["date_dt"] >= cutoff)]["daily_qty"].sum()
-                    )
+                recent_sales = recent_sales_map.get(pid, 0)
                 non_sale_net = int(grp[grp["movement_type"] != "SALE"]["quantity"].sum())
                 expected_floor = max(0, non_sale_net - recent_sales)
                 actual_stock = int(prod_map[pid]["current_stock"])
@@ -256,7 +270,7 @@ def run_anomaly_scan_detailed(db_path: DbPath = None) -> dict:
             "Stock Movement & Ledger Variance Checks: no stock movement columns (Movement Type / Movement Quantity) were mapped."
         )
 
-    # 5. Extreme Overstock / Pricing Margin Anomaly Checks (useful on uploaded snapshot files too!)
+    # 5. Extreme Overstock / Pricing Margin Anomaly Checks
     has_target_any = any(p.get("target_stock") is not None for p in products)
     has_both_prices = any(p.get("cost_price") is not None and p.get("selling_price") is not None for p in products)
 

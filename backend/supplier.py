@@ -88,23 +88,20 @@ def get_supplier_overview(db_path: DbPath = None) -> pd.DataFrame:
     return agg
 
 
-def rank_suppliers_for_product(
-    product_id: str,
+def rank_supplier_dataframe(
+    offers_df: pd.DataFrame,
     required_qty: int = 1,
     weights: Optional[dict] = None,
-    db_path: DbPath = None,
 ) -> pd.DataFrame:
-    """Rank suppliers for a given product using a transparent weighted scoring model.
+    """Rank an in-memory DataFrame of supplier offers for a single product.
 
-    If an uploaded dataset only provides a subset of supplier metrics (for example,
-    only unit_price and delivery_days without reliability_score), weights are
-    transparently re-normalized across ONLY the available metrics — never fabricating
-    missing scores!
+    Weights are transparently re-normalized across ONLY non-null available metrics
+    so missing supplier columns are never fabricated.
     """
-    df = get_all_suppliers(product_id=product_id, db_path=db_path)
-    if df.empty:
-        return df
+    if offers_df is None or offers_df.empty:
+        return pd.DataFrame() if offers_df is None else offers_df.copy()
 
+    df = offers_df.copy()
     base_w = weights or SUPPLIER_SCORE_WEIGHTS
     req = max(1, int(required_qty))
 
@@ -124,12 +121,9 @@ def rank_suppliers_for_product(
         active_weights["availability"] = float(base_w["availability"])
 
     weight_sum = sum(active_weights.values())
-    if weight_sum > 0:
-        norm_w = {k: v / weight_sum for k, v in active_weights.items()}
-    else:
-        norm_w = {}
+    norm_w = {k: v / weight_sum for k, v in active_weights.items()} if weight_sum > 0 else {}
 
-    # 1. Price score (0-100): lowest price gets 100
+    # 1. Price score (0-100)
     if has_price:
         valid_p = df["unit_price"].dropna()
         min_p, max_p = float(valid_p.min()), float(valid_p.max())
@@ -144,7 +138,7 @@ def rank_suppliers_for_product(
     else:
         df["price_score"] = np.nan
 
-    # 2. Delivery score (0-100): fastest delivery gets 100
+    # 2. Delivery score (0-100)
     if has_delivery:
         valid_d = df["delivery_days"].dropna()
         min_d, max_d = float(valid_d.min()), float(valid_d.max())
@@ -160,45 +154,44 @@ def rank_suppliers_for_product(
         df["delivery_score"] = np.nan
 
     # 3. Reliability score (0-100)
-    if has_reliability:
-        df["reliability_norm"] = df["reliability_score"].clip(0, 100).round(2)
-    else:
-        df["reliability_norm"] = np.nan
+    df["reliability_norm"] = df["reliability_score"].clip(0, 100).round(2) if has_reliability else np.nan
 
     # 4. Availability score (0-100)
     if has_avail:
-        df["availability_score"] = df["available_quantity"].apply(
-            lambda q: np.nan if pd.isna(q) else (0.0 if q <= 0 else (100.0 if q >= req else round((q / req) * 100.0, 2)))
+        avail_arr = df["available_quantity"].to_numpy(dtype=float)
+        avail_scores = np.where(
+            np.isnan(avail_arr),
+            np.nan,
+            np.where(avail_arr <= 0, 0.0, np.where(avail_arr >= req, 100.0, np.round((avail_arr / req) * 100.0, 2))),
         )
+        df["availability_score"] = avail_scores
     else:
         df["availability_score"] = np.nan
 
-    # Compute row-level weighted score strictly across available non-null metrics
-    def _compute_row_score(row: pd.Series) -> float:
-        if not norm_w:
-            return np.nan
-        num = 0.0
-        den = 0.0
+    # Vectorized weighted total score across available non-null metrics
+    if not norm_w:
+        df["total_score"] = np.nan
+    else:
         col_map = {
             "price": "price_score",
             "delivery": "delivery_score",
             "reliability": "reliability_norm",
             "availability": "availability_score",
         }
+        num = np.zeros(len(df), dtype=float)
+        den = np.zeros(len(df), dtype=float)
         for crit, w_val in norm_w.items():
-            val = row[col_map[crit]]
-            if pd.notna(val):
-                num += float(val) * w_val
-                den += w_val
-        if den <= 0:
-            return np.nan
-        score = num / den
+            vals = df[col_map[crit]].to_numpy(dtype=float)
+            valid = ~np.isnan(vals)
+            num += np.where(valid, vals * w_val, 0.0)
+            den += np.where(valid, w_val, 0.0)
+        scores = np.where(den > 0, num / np.where(den > 0, den, 1.0), np.nan)
         # Penalize suppliers explicitly known to have 0 available quantity
-        if pd.notna(row["available_quantity"]) and float(row["available_quantity"]) <= 0:
-            score *= 0.25
-        return round(score, 2)
+        if has_avail:
+            oos_mask = (~np.isnan(avail_arr)) & (avail_arr <= 0)
+            scores = np.where(oos_mask, scores * 0.25, scores)
+        df["total_score"] = np.round(scores, 2)
 
-    df["total_score"] = df.apply(_compute_row_score, axis=1)
     df["scored_criteria"] = ", ".join(norm_w.keys()) if norm_w else "None (supplier names only)"
 
     df["_score_sort"] = df["total_score"].fillna(-1.0)
@@ -216,32 +209,43 @@ def rank_suppliers_for_product(
     top_rel = float(df["reliability_score"].dropna().max()) if has_reliability else None
 
     reasons = []
-    for _, r in df.iterrows():
+    for r in df.itertuples(index=False):
         highlights = []
-        if pd.notna(r["available_quantity"]) and float(r["available_quantity"]) <= 0:
+        if pd.notna(r.available_quantity) and float(r.available_quantity) <= 0:
             highlights.append("Currently out of stock")
         else:
-            if cheapest_price is not None and pd.notna(r["unit_price"]) and float(r["unit_price"]) == cheapest_price:
-                highlights.append(f"lowest unit price (₹{float(r['unit_price']):.2f})")
-            if fastest_days is not None and pd.notna(r["delivery_days"]) and int(r["delivery_days"]) == fastest_days:
-                highlights.append(f"fastest delivery ({int(r['delivery_days'])} day(s))")
-            if top_rel is not None and pd.notna(r["reliability_score"]) and float(r["reliability_score"]) == top_rel:
-                highlights.append(f"highest reliability ({float(r['reliability_score']):.1f}%)")
-            if pd.notna(r["available_quantity"]):
-                if int(r["available_quantity"]) >= req:
-                    highlights.append(f"sufficient stock ({int(r['available_quantity'])} units)")
+            if cheapest_price is not None and pd.notna(r.unit_price) and float(r.unit_price) == cheapest_price:
+                highlights.append(f"lowest unit price (₹{float(r.unit_price):.2f})")
+            if fastest_days is not None and pd.notna(r.delivery_days) and int(r.delivery_days) == fastest_days:
+                highlights.append(f"fastest delivery ({int(r.delivery_days)} day(s))")
+            if top_rel is not None and pd.notna(r.reliability_score) and float(r.reliability_score) == top_rel:
+                highlights.append(f"highest reliability ({float(r.reliability_score):.1f}%)")
+            if pd.notna(r.available_quantity):
+                if int(r.available_quantity) >= req:
+                    highlights.append(f"sufficient stock ({int(r.available_quantity)} units)")
                 else:
-                    highlights.append(f"partial stock only ({int(r['available_quantity'])} units)")
+                    highlights.append(f"partial stock only ({int(r.available_quantity)} units)")
         if not highlights:
             if not norm_w:
                 highlights.append("listed supplier (no price, lead-time, or reliability metrics uploaded)")
             else:
                 highlights.append("balanced across available supplier metrics")
-        prefix = "Recommended (#1): " if r["rank"] == 1 else f"Rank #{r['rank']}: "
+        prefix = "Recommended (#1): " if r.rank == 1 else f"Rank #{r.rank}: "
         reasons.append(prefix + "; ".join(highlights) + ".")
 
     df["recommendation_reason"] = reasons
     return df
+
+
+def rank_suppliers_for_product(
+    product_id: str,
+    required_qty: int = 1,
+    weights: Optional[dict] = None,
+    db_path: DbPath = None,
+) -> pd.DataFrame:
+    """Rank suppliers for a given product using a transparent weighted scoring model."""
+    df = get_all_suppliers(product_id=product_id, db_path=db_path)
+    return rank_supplier_dataframe(df, required_qty=required_qty, weights=weights)
 
 
 def add_or_update_supplier_offer(

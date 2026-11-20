@@ -1,8 +1,9 @@
-# Environment & secrets
+# Environment & secrets (NEVER commit real credentials)
 .env
+.env.local
 .streamlit/secrets.toml
 
-# Local SQLite databases (auto-created on first run)
+# Local SQLite databases (auto-created on first run or in temp session dirs)
 *.db
 *.sqlite
 *.sqlite3
@@ -23,7 +24,7 @@ __pycache__/
 .coverage
 htmlcov/
 
-# IDE & OS files
+# IDE, OS & temporary files
 .vscode/
 .idea/
 .DS_Store
