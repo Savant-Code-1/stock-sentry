@@ -1,0 +1,11 @@
+* [33mfe023aa[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m Merge remote main with local project
+ [31m\[m 
+  * [33mab2a504[m[33m ([m[1;31morigin/master[m[33m)[m stock sentry
+* [33mab34ee4[m[33m ([m[1;31morigin/main[m[33m)[m Delete README.md
+* [33m5755132[m Delete LICENSE
+* [33m5948a11[m Delete .gitignore
+* [33m62d92ea[m Delete tests directory
+* [33mad68ef6[m Delete src directory
+* [33m315f7d2[m Delete notebooks directory
+* [33m1885f99[m Delete data directory
+* [33m4a42c7b[m Delete dashboard directory
